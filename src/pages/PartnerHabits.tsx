@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useHabitContext } from "@/contexts/HabitContext";
 import HabitCard from "@/components/HabitCard";
 import { User, UserPlus } from "lucide-react";
@@ -7,9 +7,13 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const PartnerHabits: React.FC = () => {
-  const { getVisiblePartnerHabits, partner } = useHabitContext();
+  const { getVisiblePartnerHabits, partner, fetchData } = useHabitContext();
   const today = new Date().toISOString().split("T")[0];
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
   
   const visiblePartnerHabits = getVisiblePartnerHabits();
 
@@ -19,10 +23,10 @@ const PartnerHabits: React.FC = () => {
         <h1 className="text-2xl font-bold mb-4">Partner's Habits</h1>
         <div className="bg-gray-50 rounded-lg p-6 shadow-sm">
           <User className="h-16 w-16 mx-auto mb-4 text-couple-primary opacity-50" />
-          <p className="text-gray-600 mb-4">You and your partner are now connected!</p>
+          <p className="text-gray-600 mb-4">No partner connected yet</p>
           <p className="text-sm text-gray-500 mb-6">
-            However, your partner hasn't created any habits yet. Once they create habits marked as visible, 
-            you'll be able to see them here.
+            You need to be connected with a partner to see their habits.
+            Once connected, visible habits will appear here.
           </p>
           <Button 
             variant="outline" 

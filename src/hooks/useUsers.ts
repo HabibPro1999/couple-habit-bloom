@@ -23,7 +23,7 @@ export const useUsers = (currentUserId: string | undefined) => {
         .from("profiles")
         .select("*")
         .eq("id", currentUserId)
-        .single();
+        .maybeSingle();
       
       if (currentUserError) throw currentUserError;
       
@@ -37,7 +37,7 @@ export const useUsers = (currentUserId: string | undefined) => {
             .from("profiles")
             .select("*")
             .eq("id", currentUserProfile.partnerId)
-            .single();
+            .maybeSingle();
             
           if (partnerError) throw partnerError;
           
@@ -47,6 +47,7 @@ export const useUsers = (currentUserId: string | undefined) => {
         }
       }
     } catch (error: any) {
+      console.error("Error fetching users:", error);
       toast.error("Error fetching users", {
         description: error.message
       });

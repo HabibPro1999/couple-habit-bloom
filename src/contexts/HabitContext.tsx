@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useCallback } from "react";
 import { useAuth } from "./AuthContext";
 import { Habit, HabitCompletion, User, MotivationalMessage } from "./types/habit.types";
 import { useHabits } from "@/hooks/useHabits";
@@ -37,6 +37,7 @@ interface HabitContextType {
   getVisiblePartnerHabits: () => Habit[];
   getHabitsForDate: (date: string) => Habit[];
   sendMotivationalMessage: (text: string) => Promise<void>;
+  fetchData: () => Promise<void>;
 }
 
 const HabitContext = createContext<HabitContextType | undefined>(undefined);
@@ -48,14 +49,24 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const { currentUser, partner, fetchUsers } = useUsers(user?.id);
   const { motivationalMessage, fetchMotivationalMessage, sendMessage } = useMotivationalMessages();
 
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
     if (user) {
-      fetchHabits();
-      fetchCompletions();
-      fetchUsers();
-      fetchMotivationalMessage();
+      try {
+        await Promise.all([
+          fetchHabits(),
+          fetchCompletions(),
+          fetchUsers(),
+          fetchMotivationalMessage()
+        ]);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
     }
-  }, [user]);
+  }, [user, fetchHabits, fetchCompletions, fetchUsers, fetchMotivationalMessage]);
+
+  useEffect(() => {
+    fetchData();
+  }, [user, fetchData]);
 
   const getHabitCompletion = (habitId: string, date: string): boolean => {
     const completion = completions.find(
@@ -137,6 +148,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     getVisiblePartnerHabits,
     getHabitsForDate,
     sendMotivationalMessage,
+    fetchData
   };
 
   return <HabitContext.Provider value={value}>{children}</HabitContext.Provider>;

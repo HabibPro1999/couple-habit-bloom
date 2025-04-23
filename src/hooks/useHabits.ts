@@ -20,9 +20,14 @@ export const useHabits = () => {
         .from("habits")
         .select("*");
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching habits:", error);
+        throw error;
+      }
+      
       setHabits(data.map(mapHabitFromDB));
     } catch (error: any) {
+      console.error("Error in fetchHabits:", error);
       toast.error("Error fetching habits", {
         description: error.message
       });
@@ -44,11 +49,16 @@ export const useHabits = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error adding habit:", error);
+        throw error;
+      }
+      
       const newHabit = mapHabitFromDB(data);
       setHabits([...habits, newHabit]);
       return newHabit;
     } catch (error: any) {
+      console.error("Error in addHabit:", error);
       toast.error("Error adding habit", {
         description: error.message
       });
@@ -63,11 +73,16 @@ export const useHabits = () => {
         .update(mapHabitToDB(updatedHabit))
         .eq("id", updatedHabit.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating habit:", error);
+        throw error;
+      }
+      
       setHabits(habits.map(habit => 
         habit.id === updatedHabit.id ? updatedHabit : habit
       ));
     } catch (error: any) {
+      console.error("Error in updateHabit:", error);
       toast.error("Error updating habit", {
         description: error.message
       });
@@ -81,9 +96,14 @@ export const useHabits = () => {
         .delete()
         .eq("id", habitId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error deleting habit:", error);
+        throw error;
+      }
+      
       setHabits(habits.filter(habit => habit.id !== habitId));
     } catch (error: any) {
+      console.error("Error in deleteHabit:", error);
       toast.error("Error deleting habit", {
         description: error.message
       });
