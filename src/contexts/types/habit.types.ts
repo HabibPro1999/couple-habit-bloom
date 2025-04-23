@@ -15,7 +15,7 @@ export interface Habit {
   completionRequirement?: CompletionRequirementType;
   createdAt: string;
   updatedAt: string;
-  user_id: string;
+  creatorId: string;
 }
 
 export interface HabitCompletion {
@@ -29,8 +29,14 @@ export interface HabitCompletion {
 export interface User {
   id: string;
   name: string;
-  isPartner: boolean;
-  partnerId?: string;
+}
+
+export interface Relationship {
+  id: string;
+  userId1: string;
+  userId2: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface MotivationalMessage {

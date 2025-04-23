@@ -11,16 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
 
 const HabitForm: React.FC = () => {
   const { habitId } = useParams<{ habitId: string }>();
   const navigate = useNavigate();
   const { habits, addHabit, updateHabit, deleteHabit, fetchData } = useHabitContext();
-  const { user } = useAuth();
   
-  // Default values for a new habit
-  const defaultHabit: Omit<Habit, "id" | "createdAt" | "updatedAt"> = {
+  const defaultHabit: Omit<Habit, "id" | "createdAt" | "updatedAt" | "creatorId"> = {
     title: "",
     description: "",
     type: "personal",
@@ -28,31 +25,31 @@ const HabitForm: React.FC = () => {
     recurrenceDays: [1, 2, 3, 4, 5], // Monday to Friday
     visibility: "visible",
     completionRequirement: "one",
-    user_id: user?.id || "", // Add the user_id property with a default value
   };
   
   const [formData, setFormData] = useState(defaultHabit);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Load habit data if editing existing habit
   useEffect(() => {
     if (habitId) {
       const habit = habits.find(h => h.id === habitId);
       if (habit) {
-        setFormData(habit);
+        setFormData({
+          title: habit.title,
+          description: habit.description,
+          type: habit.type,
+          recurrence: habit.recurrence,
+          recurrenceDays: habit.recurrenceDays,
+          visibility: habit.visibility,
+          completionRequirement: habit.completionRequirement,
+        });
         setIsEditing(true);
       } else {
         navigate("/");
       }
     }
   }, [habitId, habits, navigate]);
-
-  // Update user_id when user changes
-  useEffect(() => {
-    if (user && !isEditing) {
-      setFormData(prev => ({ ...prev, user_id: user.id }));
-    }
-  }, [user, isEditing]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -63,7 +60,6 @@ const HabitForm: React.FC = () => {
     setFormData(prev => ({ 
       ...prev, 
       type,
-      // Reset type-specific fields
       ...(type === "personal" 
         ? { visibility: "visible", completionRequirement: undefined } 
         : { visibility: undefined, completionRequirement: "one" })
@@ -102,37 +98,56 @@ const HabitForm: React.FC = () => {
     }
     
     try {
+      setIsSubmitting(true);
       console.log("Submitting habit form with data:", formData);
       
       if (isEditing && habitId) {
-        await updateHabit({ ...formData, id: habitId } as Habit);
+        const habit = habits.find(h => h.id === habitId);
+        if (!habit) {
+          throw new Error("Habit not found");
+        }
+        
+        await updateHabit({ 
+          ...habit, 
+          ...formData
+        });
         toast.success("Habit updated successfully");
       } else {
         await addHabit(formData);
         toast.success("Habit created successfully");
       }
       
-      // Fetch all habits again to ensure everything is in sync
       await fetchData();
       
-      // Navigate to the appropriate page based on habit type
       if (formData.type === "personal") {
         navigate("/all-habits");
       } else {
-        navigate("/"); // For shared habits, go to Today view
+        navigate("/");
       }
     } catch (error: any) {
       console.error("Error handling form submission:", error);
       toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
   const handleDelete = async () => {
     if (habitId && window.confirm("Are you sure you want to delete this habit?")) {
-      await deleteHabit(habitId);
-      toast.success("Habit deleted successfully");
-      await fetchData(); // Refresh data after deletion
-      navigate("/all-habits");
+      try {
+        setIsSubmitting(true);
+        await deleteHabit(habitId);
+        toast.success("Habit deleted successfully");
+        await fetchData();
+        navigate("/all-habits");
+      } catch (error: any) {
+        console.error("Error deleting habit:", error);
+        toast.error("Error deleting habit", {
+          description: error.message
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
   
@@ -289,6 +304,7 @@ const HabitForm: React.FC = () => {
                     type="button" 
                     variant="destructive"
                     onClick={handleDelete}
+                    disabled={isSubmitting}
                   >
                     Delete
                   </Button>
@@ -297,8 +313,9 @@ const HabitForm: React.FC = () => {
                     className={formData.type === "personal" 
                       ? "bg-couple-primary hover:bg-couple-primary hover:opacity-90" 
                       : "bg-couple-secondary hover:bg-couple-secondary hover:opacity-90"}
+                    disabled={isSubmitting}
                   >
-                    Save Changes
+                    {isSubmitting ? "Saving..." : "Save Changes"}
                   </Button>
                 </>
               ) : (
@@ -307,6 +324,7 @@ const HabitForm: React.FC = () => {
                     type="button" 
                     variant="outline"
                     onClick={() => navigate(-1)}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
@@ -315,8 +333,9 @@ const HabitForm: React.FC = () => {
                     className={formData.type === "personal" 
                       ? "bg-couple-primary hover:bg-couple-primary hover:opacity-90" 
                       : "bg-couple-secondary hover:bg-couple-secondary hover:opacity-90"}
+                    disabled={isSubmitting}
                   >
-                    Create Habit
+                    {isSubmitting ? "Creating..." : "Create Habit"}
                   </Button>
                 </>
               )}

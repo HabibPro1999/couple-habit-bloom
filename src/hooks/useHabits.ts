@@ -19,7 +19,7 @@ export const useHabits = () => {
       
       if (!user) {
         console.log("No user found, skipping habit fetch");
-        return;
+        return [];
       }
       
       console.log("Fetching habits for user:", user.id);
@@ -67,7 +67,7 @@ export const useHabits = () => {
       
       const dbData = {
         ...mapHabitToDB(habitData),
-        user_id: user.id
+        creator_id: user.id
       };
       
       console.log("Mapped habit data for DB:", dbData);
@@ -128,12 +128,14 @@ export const useHabits = () => {
       ));
       
       toast.success("Habit updated successfully");
+      return updatedHabit;
     } catch (error: any) {
       console.error("Error in updateHabit:", error);
       setError(error.message);
       toast.error("Error updating habit", {
         description: error.message
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -167,6 +169,7 @@ export const useHabits = () => {
       toast.error("Error deleting habit", {
         description: error.message
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }

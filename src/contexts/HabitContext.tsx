@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useCallback, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { Habit, HabitCompletion, User, MotivationalMessage } from "./types/habit.types";
@@ -28,8 +29,8 @@ interface HabitContextType {
   motivationalMessage: MotivationalMessage | null;
   isLoading: boolean;
   error: string | null;
-  addHabit: (habit: Omit<Habit, "id" | "createdAt" | "updatedAt">) => Promise<Habit>;
-  updateHabit: (habit: Habit) => Promise<void>;
+  addHabit: (habit: Omit<Habit, "id" | "createdAt" | "updatedAt" | "creatorId">) => Promise<Habit>;
+  updateHabit: (habit: Habit) => Promise<Habit>;
   deleteHabit: (habitId: string) => Promise<void>;
   toggleHabitCompletion: (habitId: string, date: string) => Promise<void>;
   getHabitCompletion: (habitId: string, date: string) => boolean;
@@ -45,11 +46,11 @@ interface HabitContextType {
 const HabitContext = createContext<HabitContextType | undefined>(undefined);
 
 export function HabitProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { habits, isLoading: habitsLoading, error: habitsError, fetchHabits, addHabit, updateHabit, deleteHabit } = useHabits();
-  const { completions, fetchCompletions, toggleCompletion } = useCompletions();
-  const { currentUser, partner, fetchUsers } = useUsers(user?.id);
-  const { motivationalMessage, fetchMotivationalMessage, sendMessage } = useMotivationalMessages();
+  const { completions, isLoading: completionsLoading, fetchCompletions, toggleCompletion } = useCompletions();
+  const { currentUser, partner, isLoading: usersLoading, fetchUsers } = useUsers(user?.id);
+  const { motivationalMessage, isLoading: messagesLoading, fetchMotivationalMessage, sendMessage } = useMotivationalMessages();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,10 +97,10 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     console.log("HabitContext: User changed, fetching data", user?.id);
-    if (user) {
+    if (user && !authLoading) {
       fetchData();
     }
-  }, [user, fetchData]);
+  }, [user, authLoading, fetchData]);
 
   const getHabitCompletion = (habitId: string, date: string): boolean => {
     const completion = completions.find(
@@ -119,7 +120,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const getPersonalHabits = () => {
     console.log("Getting personal habits, all habits:", habits.length);
     const personalHabits = habits.filter(
-      habit => habit.type === "personal" && habit.user_id === user?.id
+      habit => habit.type === "personal" && habit.creatorId === user?.id
     );
     console.log("Personal habits:", personalHabits.length);
     return personalHabits;
@@ -128,7 +129,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const getSharedHabits = () => {
     console.log("Getting shared habits, all habits:", habits.length);
     const sharedHabits = habits.filter(
-      habit => habit.type === "shared" && habit.user_id === user?.id
+      habit => habit.type === "shared" && habit.creatorId === user?.id
     );
     console.log("Shared habits:", sharedHabits.length);
     return sharedHabits;
@@ -140,7 +141,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     const partnerHabits = habits.filter(habit => 
       habit.type === "personal" && 
       habit.visibility === "visible" &&
-      habit.user_id === partner.id
+      habit.creatorId === partner.id
     );
     console.log("Visible partner habits:", partnerHabits.length);
     return partnerHabits;
@@ -150,10 +151,10 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     const dayOfWeek = new Date(date).getDay();
     console.log("Getting habits for date:", date, "Day of week:", dayOfWeek);
     const filteredHabits = habits.filter(habit => {
-      const isOwnPersonalHabit = habit.user_id === user?.id && habit.type === "personal";
-      const isOwnSharedHabit = habit.user_id === user?.id && habit.type === "shared";
+      const isOwnPersonalHabit = habit.creatorId === user?.id && habit.type === "personal";
+      const isOwnSharedHabit = habit.creatorId === user?.id && habit.type === "shared";
       const isPartnerVisibleHabit = partner && 
-                                 habit.user_id === partner.id && 
+                                 habit.creatorId === partner.id && 
                                  habit.type === "personal" && 
                                  habit.visibility === "visible";
       
@@ -185,15 +186,32 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleAddHabit = async (habitData: Omit<Habit, "id" | "createdAt" | "updatedAt" | "creatorId">) => {
+    if (!user) {
+      throw new Error("User must be logged in to add a habit");
+    }
+    
+    // Add the creatorId to the habit data
+    const habitWithCreator = {
+      ...habitData,
+      creatorId: user.id
+    };
+    
+    return await addHabit(habitWithCreator);
+  };
+
+  // Combine loading states
+  const combinedLoading = isLoading || habitsLoading || completionsLoading || usersLoading || messagesLoading;
+
   const value = {
     habits,
     completions,
     currentUser,
     partner,
     motivationalMessage,
-    isLoading,
-    error,
-    addHabit,
+    isLoading: combinedLoading,
+    error: error || habitsError,
+    addHabit: handleAddHabit,
     updateHabit,
     deleteHabit,
     toggleHabitCompletion,

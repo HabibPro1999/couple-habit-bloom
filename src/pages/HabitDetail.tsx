@@ -6,26 +6,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Edit, ArrowLeft, User, Users, Calendar as CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { Edit, ArrowLeft, User, Users, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 
 const HabitDetail: React.FC = () => {
   const { habitId } = useParams<{ habitId: string }>();
   const navigate = useNavigate();
-  const { habits, completions, currentUser, partner } = useHabitContext();
+  const { habits, completions, currentUser, partner, isLoading } = useHabitContext();
   const [habit, setHabit] = useState<Habit | null>(null);
   const [date, setDate] = useState<Date>(new Date());
   
   useEffect(() => {
-    if (habitId) {
+    if (habitId && habits.length > 0) {
       const foundHabit = habits.find(h => h.id === habitId);
       if (foundHabit) {
         setHabit(foundHabit);
       } else {
-        navigate("/");
+        navigate("/", { replace: true });
       }
     }
   }, [habitId, habits, navigate]);
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
   
   if (!habit) {
     return null; // Loading or redirect will happen
@@ -36,6 +43,8 @@ const HabitDetail: React.FC = () => {
   
   // Get dates with completions
   const getDatesWithCompletions = () => {
+    if (!currentUser) return [];
+    
     const userCompletionDates = habitCompletions
       .filter(c => c.userId === currentUser.id && c.completed)
       .map(c => new Date(c.date));
@@ -90,6 +99,9 @@ const HabitDetail: React.FC = () => {
     return streak;
   };
   
+  // Check if user is the creator
+  const isCreator = currentUser && habit.creatorId === currentUser.id;
+  
   return (
     <div className="container max-w-md mx-auto px-4 py-6 page-transition">
       <header className="mb-6">
@@ -105,13 +117,15 @@ const HabitDetail: React.FC = () => {
             </Button>
             <h1 className="text-2xl font-bold">Habit Details</h1>
           </div>
-          <Button 
-            variant="outline" 
-            size="icon"
-            onClick={() => navigate(`/edit-habit/${habit.id}`)}
-          >
-            <Edit className="h-5 w-5" />
-          </Button>
+          {isCreator && (
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => navigate(`/edit-habit/${habit.id}`)}
+            >
+              <Edit className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </header>
       

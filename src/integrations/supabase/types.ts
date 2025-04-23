@@ -56,8 +56,9 @@ export type Database = {
       }
       habits: {
         Row: {
-          completion_requirement: string
+          completion_requirement: string | null
           created_at: string
+          creator_id: string
           description: string | null
           id: string
           recurrence: string
@@ -65,12 +66,12 @@ export type Database = {
           title: string
           type: string
           updated_at: string
-          user_id: string
           visibility: string
         }
         Insert: {
-          completion_requirement?: string
+          completion_requirement?: string | null
           created_at?: string
+          creator_id: string
           description?: string | null
           id?: string
           recurrence: string
@@ -78,12 +79,12 @@ export type Database = {
           title: string
           type: string
           updated_at?: string
-          user_id: string
           visibility?: string
         }
         Update: {
-          completion_requirement?: string
+          completion_requirement?: string | null
           created_at?: string
+          creator_id?: string
           description?: string | null
           id?: string
           recurrence?: string
@@ -91,13 +92,12 @@ export type Database = {
           title?: string
           type?: string
           updated_at?: string
-          user_id?: string
           visibility?: string
         }
         Relationships: [
           {
-            foreignKeyName: "habits_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "habits_creator_id_fkey"
+            columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -140,31 +140,56 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          is_partner: boolean
           name: string
-          partner_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           id: string
-          is_partner?: boolean
           name: string
-          partner_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           id?: string
-          is_partner?: boolean
           name?: string
-          partner_id?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      relationships: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id_1: string
+          user_id_2: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id_1: string
+          user_id_2: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id_1?: string
+          user_id_2?: string
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_partner_id_fkey"
-            columns: ["partner_id"]
+            foreignKeyName: "relationships_user_id_1_fkey"
+            columns: ["user_id_1"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationships_user_id_2_fkey"
+            columns: ["user_id_2"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

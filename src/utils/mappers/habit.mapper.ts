@@ -1,5 +1,5 @@
 
-import { Habit, HabitCompletion, User, MotivationalMessage } from "@/contexts/types/habit.types";
+import { Habit, HabitCompletion, User, MotivationalMessage, Relationship } from "@/contexts/types/habit.types";
 
 export const mapHabitFromDB = (data: any): Habit => ({
   id: data.id,
@@ -12,7 +12,7 @@ export const mapHabitFromDB = (data: any): Habit => ({
   completionRequirement: data.completion_requirement,
   createdAt: data.created_at,
   updatedAt: data.updated_at,
-  user_id: data.user_id,
+  creatorId: data.creator_id,
 });
 
 export const mapHabitToDB = (habit: Partial<Habit>) => ({
@@ -23,6 +23,7 @@ export const mapHabitToDB = (habit: Partial<Habit>) => ({
   recurrence_days: habit.recurrenceDays,
   visibility: habit.visibility,
   completion_requirement: habit.completionRequirement,
+  creator_id: habit.creatorId,
 });
 
 export const mapCompletionFromDB = (data: any): HabitCompletion => ({
@@ -43,8 +44,14 @@ export const mapCompletionToDB = (completion: Partial<HabitCompletion>) => ({
 export const mapUserFromDB = (data: any): User => ({
   id: data.id,
   name: data.name,
-  isPartner: data.is_partner,
-  partnerId: data.partner_id,
+});
+
+export const mapRelationshipFromDB = (data: any): Relationship => ({
+  id: data.id,
+  userId1: data.user_id_1,
+  userId2: data.user_id_2,
+  createdAt: data.created_at,
+  updatedAt: data.updated_at,
 });
 
 export const mapMotivationalMessageFromDB = (data: any): MotivationalMessage => ({
