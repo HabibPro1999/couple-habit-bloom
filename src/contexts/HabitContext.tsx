@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
@@ -89,7 +90,22 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         .select("*");
       
       if (error) throw error;
-      setHabits(data || []);
+      
+      // Map the data to match our interface
+      const mappedHabits = data?.map(habit => ({
+        id: habit.id,
+        title: habit.title,
+        description: habit.description || undefined,
+        type: habit.type as HabitType,
+        recurrence: habit.recurrence as RecurrenceType,
+        recurrenceDays: habit.recurrence_days || undefined,
+        visibility: habit.visibility as VisibilityType || "visible",
+        completionRequirement: habit.completion_requirement as CompletionRequirementType || "both",
+        createdAt: habit.created_at,
+        updatedAt: habit.updated_at
+      })) || [];
+      
+      setHabits(mappedHabits);
     } catch (error: any) {
       toast.error("Error fetching habits", {
         description: error.message
@@ -104,7 +120,17 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         .select("*");
       
       if (error) throw error;
-      setCompletions(data || []);
+
+      // Map the data to match our interface
+      const mappedCompletions = data?.map(completion => ({
+        id: completion.id,
+        habitId: completion.habit_id,
+        userId: completion.user_id,
+        date: completion.date,
+        completed: completion.completed
+      })) || [];
+      
+      setCompletions(mappedCompletions);
     } catch (error: any) {
       toast.error("Error fetching completions", {
         description: error.message
@@ -124,8 +150,21 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         const currentUserProfile = data.find(profile => profile.id === user?.id);
         const partnerProfile = data.find(profile => profile.id !== user?.id);
         
-        setCurrentUser(currentUserProfile || null);
-        setPartner(partnerProfile || null);
+        if (currentUserProfile) {
+          setCurrentUser({
+            id: currentUserProfile.id,
+            name: currentUserProfile.name,
+            isPartner: !!currentUserProfile.is_partner
+          });
+        }
+        
+        if (partnerProfile) {
+          setPartner({
+            id: partnerProfile.id,
+            name: partnerProfile.name,
+            isPartner: !!partnerProfile.is_partner
+          });
+        }
       }
     } catch (error: any) {
       toast.error("Error fetching profiles", {
@@ -145,24 +184,64 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         .single();
       
       if (error && error.code !== "PGRST116") throw error;
-      setMotivationalMessage(data || null);
+      
+      if (data) {
+        setMotivationalMessage({
+          id: data.id,
+          text: data.text,
+          senderId: data.sender_id,
+          createdAt: data.created_at,
+          expiresAt: data.expires_at
+        });
+      } else {
+        setMotivationalMessage(null);
+      }
     } catch (error: any) {
-      toast.error("Error fetching motivational message", {
-        description: error.message
-      });
+      if (error.code !== "PGRST116") { // Skip error for empty result
+        toast.error("Error fetching motivational message", {
+          description: error.message
+        });
+      }
     }
   };
 
   const addHabit = async (habitData: Omit<Habit, "id" | "createdAt" | "updatedAt">) => {
     try {
+      // Transform our interface data to match Supabase schema
+      const supabaseHabitData = {
+        title: habitData.title,
+        description: habitData.description,
+        type: habitData.type,
+        recurrence: habitData.recurrence,
+        recurrence_days: habitData.recurrenceDays,
+        visibility: habitData.visibility,
+        completion_requirement: habitData.completionRequirement,
+        user_id: user?.id
+      };
+
       const { data, error } = await supabase
         .from("habits")
-        .insert([{ ...habitData, user_id: user?.id }])
+        .insert([supabaseHabitData])
         .select()
         .single();
 
       if (error) throw error;
-      setHabits([...habits, data]);
+      
+      // Map the response back to our interface
+      const newHabit: Habit = {
+        id: data.id,
+        title: data.title,
+        description: data.description || undefined,
+        type: data.type as HabitType,
+        recurrence: data.recurrence as RecurrenceType,
+        recurrenceDays: data.recurrence_days || undefined,
+        visibility: data.visibility as VisibilityType || "visible",
+        completionRequirement: data.completion_requirement as CompletionRequirementType || "both",
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+
+      setHabits([...habits, newHabit]);
     } catch (error: any) {
       toast.error("Error adding habit", {
         description: error.message
@@ -172,12 +251,25 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
 
   const updateHabit = async (updatedHabit: Habit) => {
     try {
+      // Transform our interface data to match Supabase schema
+      const supabaseHabitData = {
+        id: updatedHabit.id,
+        title: updatedHabit.title,
+        description: updatedHabit.description,
+        type: updatedHabit.type,
+        recurrence: updatedHabit.recurrence,
+        recurrence_days: updatedHabit.recurrenceDays,
+        visibility: updatedHabit.visibility,
+        completion_requirement: updatedHabit.completionRequirement,
+      };
+
       const { error } = await supabase
         .from("habits")
-        .update(updatedHabit)
+        .update(supabaseHabitData)
         .eq("id", updatedHabit.id);
 
       if (error) throw error;
+      
       setHabits(habits.map(habit => 
         habit.id === updatedHabit.id ? updatedHabit : habit
       ));
@@ -220,6 +312,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
           .eq("id", existingCompletion.id);
 
         if (error) throw error;
+        
         setCompletions(completions.map(completion =>
           completion.id === existingCompletion.id
             ? { ...completion, completed: !completion.completed }
@@ -238,7 +331,17 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
           .single();
 
         if (error) throw error;
-        setCompletions([...completions, data]);
+        
+        // Map the response back to our interface
+        const newCompletion: HabitCompletion = {
+          id: data.id,
+          habitId: data.habit_id,
+          userId: data.user_id,
+          date: data.date,
+          completed: data.completed
+        };
+
+        setCompletions([...completions, newCompletion]);
       }
     } catch (error: any) {
       toast.error("Error toggling habit completion", {
@@ -305,7 +408,17 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error) throw error;
-      setMotivationalMessage(data);
+      
+      // Map the response back to our interface
+      const newMessage: MotivationalMessage = {
+        id: data.id,
+        text: data.text,
+        senderId: data.sender_id,
+        createdAt: data.created_at,
+        expiresAt: data.expires_at
+      };
+
+      setMotivationalMessage(newMessage);
     } catch (error: any) {
       toast.error("Error sending motivational message", {
         description: error.message
