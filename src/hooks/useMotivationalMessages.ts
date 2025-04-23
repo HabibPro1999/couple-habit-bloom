@@ -10,15 +10,16 @@ export const useMotivationalMessages = () => {
 
   const fetchMotivationalMessage = async () => {
     try {
+      // The RLS policy will automatically filter so we only see messages sent by the partner
       const { data, error } = await supabase
         .from("motivational_messages")
         .select("*")
         .gte("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== "PGRST116") throw error;
+      if (error) throw error;
       
       if (data) {
         setMotivationalMessage(mapMotivationalMessageFromDB(data));
@@ -26,11 +27,9 @@ export const useMotivationalMessages = () => {
         setMotivationalMessage(null);
       }
     } catch (error: any) {
-      if (error.code !== "PGRST116") {
-        toast.error("Error fetching motivational message", {
-          description: error.message
-        });
-      }
+      toast.error("Error fetching motivational message", {
+        description: error.message
+      });
     }
   };
 
@@ -51,7 +50,10 @@ export const useMotivationalMessages = () => {
         .single();
 
       if (error) throw error;
-      setMotivationalMessage(mapMotivationalMessageFromDB(data));
+      
+      // Don't update local state after sending a message
+      // Because the sender shouldn't see it (controlled by RLS)
+      toast.success("Message sent to your partner successfully!");
     } catch (error: any) {
       toast.error("Error sending motivational message", {
         description: error.message

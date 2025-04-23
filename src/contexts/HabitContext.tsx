@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { Habit, HabitCompletion, User, MotivationalMessage } from "./types/habit.types";
@@ -73,9 +74,16 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
 
   const getPersonalHabits = () => habits.filter(habit => habit.type === "personal");
   const getSharedHabits = () => habits.filter(habit => habit.type === "shared");
-  const getVisiblePartnerHabits = () => (
-    habits.filter(habit => habit.type === "personal" && habit.visibility === "visible")
-  );
+  
+  // Updated to respect new RLS policies - only show visible partner habits
+  const getVisiblePartnerHabits = () => {
+    if (!partner) return [];
+    return habits.filter(habit => 
+      habit.type === "personal" && 
+      habit.visibility === "visible" &&
+      habit.user_id === partner.id
+    );
+  };
 
   const getHabitsForDate = (date: string) => {
     const dayOfWeek = new Date(date).getDay();

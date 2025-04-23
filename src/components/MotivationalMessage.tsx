@@ -3,11 +3,15 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
 import { useHabitContext } from "@/contexts/HabitContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const MotivationalMessage: React.FC = () => {
-  const { motivationalMessage } = useHabitContext();
+  const { motivationalMessage, currentUser } = useHabitContext();
+  const { user } = useAuth();
   
-  if (!motivationalMessage) return null;
+  // Only show messages that were sent by someone else (partner)
+  // This is now enforced by RLS policy as well
+  if (!motivationalMessage || motivationalMessage.senderId === user?.id) return null;
   
   return (
     <Card className="bg-couple-secondary/10 border-none mb-6">
