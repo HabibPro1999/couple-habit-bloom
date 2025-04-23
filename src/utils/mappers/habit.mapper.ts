@@ -1,4 +1,3 @@
-
 import { Habit, HabitCompletion, User, MotivationalMessage } from "@/contexts/types/habit.types";
 
 export const mapHabitFromDB = (data: any): Habit => ({
@@ -12,6 +11,7 @@ export const mapHabitFromDB = (data: any): Habit => ({
   completionRequirement: data.completion_requirement,
   createdAt: data.created_at,
   updatedAt: data.updated_at,
+  user_id: data.user_id,
 });
 
 export const mapHabitToDB = (habit: Partial<Habit>) => ({

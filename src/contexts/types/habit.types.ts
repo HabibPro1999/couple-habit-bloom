@@ -1,4 +1,3 @@
-
 export type HabitType = "personal" | "shared";
 export type VisibilityType = "visible" | "secret";
 export type CompletionRequirementType = "one" | "both";
@@ -15,6 +14,7 @@ export interface Habit {
   completionRequirement?: CompletionRequirementType;
   createdAt: string;
   updatedAt: string;
+  user_id: string;
 }
 
 export interface HabitCompletion {
