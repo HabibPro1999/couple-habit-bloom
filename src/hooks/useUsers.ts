@@ -20,7 +20,8 @@ export const useUsers = (currentUserId: string | undefined) => {
       
       const { data, error } = await supabase
         .from("profiles")
-        .select("*");
+        .select("*")
+        .eq("is_partner", true);
       
       if (error) throw error;
 
@@ -28,8 +29,10 @@ export const useUsers = (currentUserId: string | undefined) => {
         const users = data.map(mapUserFromDB);
         const currentUserProfile = users.find(user => user.id === currentUserId);
         
-        // Find partner (any user that is not the current user)
-        const partnerProfile = users.find(user => user.id !== currentUserId);
+        // Find partner (a user marked as partner who is not the current user)
+        const partnerProfile = users.find(user => 
+          user.id !== currentUserId && user.isPartner
+        );
         
         if (currentUserProfile) setCurrentUser(currentUserProfile);
         if (partnerProfile) setPartner(partnerProfile);
