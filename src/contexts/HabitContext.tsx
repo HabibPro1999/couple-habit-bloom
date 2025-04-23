@@ -72,8 +72,15 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     return completion ? completion.completed : false;
   };
 
-  const getPersonalHabits = () => habits.filter(habit => habit.type === "personal");
-  const getSharedHabits = () => habits.filter(habit => habit.type === "shared");
+  // Updated to only return personal habits that belong to the current user
+  const getPersonalHabits = () => habits.filter(
+    habit => habit.type === "personal" && habit.user_id === user?.id
+  );
+  
+  // Updated to only return shared habits that belong to the current user
+  const getSharedHabits = () => habits.filter(
+    habit => habit.type === "shared" && habit.user_id === user?.id
+  );
   
   // Updated to respect new RLS policies - only show visible partner habits
   const getVisiblePartnerHabits = () => {
@@ -87,7 +94,12 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
 
   const getHabitsForDate = (date: string) => {
     const dayOfWeek = new Date(date).getDay();
+    // Updated to only return habits for the current user
     return habits.filter(habit => {
+      if (habit.user_id !== user?.id && (habit.type !== "personal" || habit.visibility !== "visible" || habit.user_id !== partner?.id)) {
+        return false;
+      }
+      
       if (habit.recurrence === "daily") return true;
       if (habit.recurrence === "specific-days" && habit.recurrenceDays) {
         return habit.recurrenceDays.includes(dayOfWeek);

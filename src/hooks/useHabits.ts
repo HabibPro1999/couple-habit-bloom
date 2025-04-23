@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Habit } from "@/contexts/types/habit.types";
@@ -12,7 +11,12 @@ export const useHabits = () => {
 
   const fetchHabits = async () => {
     try {
-      const { data, error } = await supabase.from("habits").select("*");
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from("habits")
+        .select("*");
+        
       if (error) throw error;
       setHabits(data.map(mapHabitFromDB));
     } catch (error: any) {
@@ -26,7 +30,6 @@ export const useHabits = () => {
     try {
       if (!user) throw new Error("User must be logged in to add a habit");
       
-      // Map the habit data to match the DB schema and add user_id
       const dbData = {
         ...mapHabitToDB(habitData),
         user_id: user.id
