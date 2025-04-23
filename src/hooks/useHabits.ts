@@ -14,8 +14,9 @@ export const useHabits = () => {
     try {
       if (!user) return;
       
-      // Get habits based on the updated RLS policies
-      // This will automatically fetch both the user's habits and their partner's visible habits
+      console.log("Fetching habits for user:", user.id);
+      
+      // Get habits based on the RLS policies
       const { data, error } = await supabase
         .from("habits")
         .select("*");
@@ -25,6 +26,7 @@ export const useHabits = () => {
         throw error;
       }
       
+      console.log("Fetched habits:", data);
       setHabits(data.map(mapHabitFromDB));
     } catch (error: any) {
       console.error("Error in fetchHabits:", error);
@@ -38,10 +40,14 @@ export const useHabits = () => {
     try {
       if (!user) throw new Error("User must be logged in to add a habit");
       
+      console.log("Adding habit with data:", habitData);
+      
       const dbData = {
         ...mapHabitToDB(habitData),
         user_id: user.id
       };
+      
+      console.log("Mapped habit data for DB:", dbData);
       
       const { data, error } = await supabase
         .from("habits")
@@ -54,8 +60,14 @@ export const useHabits = () => {
         throw error;
       }
       
+      console.log("Successfully added habit:", data);
+      
       const newHabit = mapHabitFromDB(data);
       setHabits([...habits, newHabit]);
+      
+      // Fetch all habits again to ensure everything is in sync
+      await fetchHabits();
+      
       return newHabit;
     } catch (error: any) {
       console.error("Error in addHabit:", error);
@@ -68,6 +80,8 @@ export const useHabits = () => {
 
   const updateHabit = async (updatedHabit: Habit) => {
     try {
+      console.log("Updating habit:", updatedHabit);
+      
       const { error } = await supabase
         .from("habits")
         .update(mapHabitToDB(updatedHabit))
@@ -78,9 +92,14 @@ export const useHabits = () => {
         throw error;
       }
       
+      console.log("Successfully updated habit");
+      
       setHabits(habits.map(habit => 
         habit.id === updatedHabit.id ? updatedHabit : habit
       ));
+      
+      // Fetch all habits again to ensure everything is in sync
+      await fetchHabits();
     } catch (error: any) {
       console.error("Error in updateHabit:", error);
       toast.error("Error updating habit", {
@@ -91,6 +110,8 @@ export const useHabits = () => {
 
   const deleteHabit = async (habitId: string) => {
     try {
+      console.log("Deleting habit with ID:", habitId);
+      
       const { error } = await supabase
         .from("habits")
         .delete()
@@ -100,6 +121,8 @@ export const useHabits = () => {
         console.error("Error deleting habit:", error);
         throw error;
       }
+      
+      console.log("Successfully deleted habit");
       
       setHabits(habits.filter(habit => habit.id !== habitId));
     } catch (error: any) {

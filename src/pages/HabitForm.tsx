@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const HabitForm: React.FC = () => {
   const { habitId } = useParams<{ habitId: string }>();
   const navigate = useNavigate();
-  const { habits, addHabit, updateHabit, deleteHabit } = useHabitContext();
+  const { habits, addHabit, updateHabit, deleteHabit, fetchData } = useHabitContext();
   const { user } = useAuth();
   
   // Default values for a new habit
@@ -93,7 +93,7 @@ const HabitForm: React.FC = () => {
     setFormData(prev => ({ ...prev, recurrenceDays: daysArray }));
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title.trim()) {
@@ -102,24 +102,37 @@ const HabitForm: React.FC = () => {
     }
     
     try {
+      console.log("Submitting habit form with data:", formData);
+      
       if (isEditing && habitId) {
-        updateHabit({ ...formData, id: habitId } as Habit);
+        await updateHabit({ ...formData, id: habitId } as Habit);
         toast.success("Habit updated successfully");
       } else {
-        addHabit(formData);
+        await addHabit(formData);
         toast.success("Habit created successfully");
       }
-      navigate("/");
-    } catch (error) {
+      
+      // Fetch all habits again to ensure everything is in sync
+      await fetchData();
+      
+      // Navigate to the appropriate page based on habit type
+      if (formData.type === "personal") {
+        navigate("/all-habits");
+      } else {
+        navigate("/"); // For shared habits, go to Today view
+      }
+    } catch (error: any) {
+      console.error("Error handling form submission:", error);
       toast.error("An error occurred. Please try again.");
     }
   };
   
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (habitId && window.confirm("Are you sure you want to delete this habit?")) {
-      deleteHabit(habitId);
+      await deleteHabit(habitId);
       toast.success("Habit deleted successfully");
-      navigate("/");
+      await fetchData(); // Refresh data after deletion
+      navigate("/all-habits");
     }
   };
   

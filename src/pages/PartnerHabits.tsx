@@ -12,12 +12,15 @@ const PartnerHabits: React.FC = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
+    console.log("PartnerHabits component mounted, fetching data");
     fetchData();
   }, [fetchData]);
   
   const visiblePartnerHabits = getVisiblePartnerHabits();
+  console.log("Partner habits in PartnerHabits component:", visiblePartnerHabits.length);
 
   if (!partner) {
+    console.log("No partner found in PartnerHabits component");
     return (
       <div className="container max-w-md mx-auto px-4 py-6 text-center page-transition">
         <h1 className="text-2xl font-bold mb-4">Partner's Habits</h1>
@@ -41,6 +44,8 @@ const PartnerHabits: React.FC = () => {
     );
   }
 
+  console.log("Partner found:", partner.name, "with ID:", partner.id);
+  
   return (
     <div className="container max-w-md mx-auto px-4 py-6 page-transition">
       <header className="mb-6">

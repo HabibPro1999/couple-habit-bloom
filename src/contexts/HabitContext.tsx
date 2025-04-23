@@ -52,12 +52,14 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const fetchData = useCallback(async () => {
     if (user) {
       try {
+        console.log("Fetching all data for user:", user.id);
         await Promise.all([
           fetchHabits(),
           fetchCompletions(),
           fetchUsers(),
           fetchMotivationalMessage()
         ]);
+        console.log("All data fetched successfully");
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -65,6 +67,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchHabits, fetchCompletions, fetchUsers, fetchMotivationalMessage]);
 
   useEffect(() => {
+    console.log("HabitContext: User changed, fetching data", user?.id);
     fetchData();
   }, [user, fetchData]);
 
@@ -84,49 +87,80 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Personal habits that belong to the current user
-  const getPersonalHabits = () => habits.filter(
-    habit => habit.type === "personal" && habit.user_id === user?.id
-  );
+  const getPersonalHabits = () => {
+    console.log("Getting personal habits, all habits:", habits.length);
+    const personalHabits = habits.filter(
+      habit => habit.type === "personal" && habit.user_id === user?.id
+    );
+    console.log("Personal habits:", personalHabits.length);
+    return personalHabits;
+  };
   
   // Shared habits that belong to the current user
-  const getSharedHabits = () => habits.filter(
-    habit => habit.type === "shared" && habit.user_id === user?.id
-  );
+  const getSharedHabits = () => {
+    console.log("Getting shared habits, all habits:", habits.length);
+    const sharedHabits = habits.filter(
+      habit => habit.type === "shared" && habit.user_id === user?.id
+    );
+    console.log("Shared habits:", sharedHabits.length);
+    return sharedHabits;
+  };
   
   // Visible partner habits
   const getVisiblePartnerHabits = () => {
     if (!partner) return [];
-    return habits.filter(habit => 
+    console.log("Getting visible partner habits, partner id:", partner.id);
+    const partnerHabits = habits.filter(habit => 
       habit.type === "personal" && 
       habit.visibility === "visible" &&
       habit.user_id === partner.id
     );
+    console.log("Visible partner habits:", partnerHabits.length);
+    return partnerHabits;
   };
 
   const getHabitsForDate = (date: string) => {
     const dayOfWeek = new Date(date).getDay();
+    console.log("Getting habits for date:", date, "Day of week:", dayOfWeek);
     // Return habits for the current user based on the date
-    return habits.filter(habit => {
-      if (habit.user_id !== user?.id && (habit.type !== "personal" || habit.visibility !== "visible" || habit.user_id !== partner?.id)) {
-        return false;
+    const filteredHabits = habits.filter(habit => {
+      // Own personal habits
+      const isOwnPersonalHabit = habit.user_id === user?.id && habit.type === "personal";
+      
+      // Own shared habits
+      const isOwnSharedHabit = habit.user_id === user?.id && habit.type === "shared";
+      
+      // Partner's visible personal habits
+      const isPartnerVisibleHabit = partner && 
+                                 habit.user_id === partner.id && 
+                                 habit.type === "personal" && 
+                                 habit.visibility === "visible";
+      
+      // Check if this habit should be shown based on recurrence
+      let matchesRecurrence = false;
+      if (habit.recurrence === "daily") {
+        matchesRecurrence = true;
+      } else if (habit.recurrence === "specific-days" && habit.recurrenceDays) {
+        matchesRecurrence = habit.recurrenceDays.includes(dayOfWeek);
       }
       
-      if (habit.recurrence === "daily") return true;
-      if (habit.recurrence === "specific-days" && habit.recurrenceDays) {
-        return habit.recurrenceDays.includes(dayOfWeek);
-      }
-      return false;
+      return (isOwnPersonalHabit || isOwnSharedHabit || isPartnerVisibleHabit) && matchesRecurrence;
     });
+    
+    console.log("Habits for date after filtering:", filteredHabits.length);
+    return filteredHabits;
   };
 
   const toggleHabitCompletion = async (habitId: string, date: string) => {
     if (user) {
+      console.log("Toggling habit completion for habit:", habitId, "date:", date);
       await toggleCompletion(habitId, date, user.id);
     }
   };
 
   const sendMotivationalMessage = async (text: string) => {
     if (user) {
+      console.log("Sending motivational message:", text);
       await sendMessage(text, user.id);
     }
   };
