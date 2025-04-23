@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 // Define habit types
@@ -34,11 +33,20 @@ export interface User {
   isPartner: boolean;
 }
 
+export interface MotivationalMessage {
+  id: string;
+  text: string;
+  senderId: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
 interface HabitContextType {
   habits: Habit[];
   completions: HabitCompletion[];
   currentUser: User;
   partner: User | null;
+  motivationalMessage: MotivationalMessage | null;
   // Habit operations
   addHabit: (habit: Omit<Habit, "id" | "createdAt" | "updatedAt">) => void;
   updateHabit: (habit: Habit) => void;
@@ -52,6 +60,8 @@ interface HabitContextType {
   getSharedHabits: () => Habit[];
   getVisiblePartnerHabits: () => Habit[];
   getHabitsForDate: (date: string) => Habit[];
+  // Motivational Message operations
+  sendMotivationalMessage: (text: string) => void;
 }
 
 // Create the context with an undefined default value
@@ -163,11 +173,13 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const [completions, setCompletions] = useState<HabitCompletion[]>(mockCompletions);
   const [currentUser] = useState<User>(mockCurrentUser);
   const [partner] = useState<User | null>(mockPartner);
+  const [motivationalMessage, setMotivationalMessage] = useState<MotivationalMessage | null>(null);
 
   // Load data from local storage on mount
   useEffect(() => {
     const storedHabits = localStorage.getItem("habits");
     const storedCompletions = localStorage.getItem("completions");
+    const storedMessage = localStorage.getItem("motivationalMessage");
     
     if (storedHabits) {
       setHabits(JSON.parse(storedHabits));
@@ -175,6 +187,16 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     
     if (storedCompletions) {
       setCompletions(JSON.parse(storedCompletions));
+    }
+    
+    if (storedMessage) {
+      const parsedMessage = JSON.parse(storedMessage);
+      // Check if the message has expired
+      if (new Date(parsedMessage.expiresAt) > new Date()) {
+        setMotivationalMessage(parsedMessage);
+      } else {
+        localStorage.removeItem("motivationalMessage");
+      }
     }
   }, []);
 
@@ -186,6 +208,12 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem("completions", JSON.stringify(completions));
   }, [completions]);
+
+  useEffect(() => {
+    if (motivationalMessage) {
+      localStorage.setItem("motivationalMessage", JSON.stringify(motivationalMessage));
+    }
+  }, [motivationalMessage]);
 
   // Function to add a new habit
   const addHabit = (habitData: Omit<Habit, "id" | "createdAt" | "updatedAt">) => {
@@ -294,12 +322,30 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // Function to send a motivational message
+  const sendMotivationalMessage = (text: string) => {
+    const now = new Date();
+    const expiresAt = new Date(now);
+    expiresAt.setHours(expiresAt.getHours() + 24); // Message expires after 24 hours
+    
+    const newMessage: MotivationalMessage = {
+      id: Date.now().toString(),
+      text,
+      senderId: currentUser.id,
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+    };
+    
+    setMotivationalMessage(newMessage);
+  };
+
   // Value object that will be passed to consumers
   const value = {
     habits,
     completions,
     currentUser,
     partner,
+    motivationalMessage,
     addHabit,
     updateHabit,
     deleteHabit,
@@ -310,6 +356,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     getSharedHabits,
     getVisiblePartnerHabits,
     getHabitsForDate,
+    sendMotivationalMessage,
   };
 
   return <HabitContext.Provider value={value}>{children}</HabitContext.Provider>;
