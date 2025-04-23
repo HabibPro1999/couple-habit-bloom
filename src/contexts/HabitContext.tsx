@@ -6,8 +6,18 @@ import { useCompletions } from "@/hooks/useCompletions";
 import { useUsers } from "@/hooks/useUsers";
 import { useMotivationalMessages } from "@/hooks/useMotivationalMessages";
 
-export { Habit, HabitCompletion, User, MotivationalMessage } from "./types/habit.types";
-export { type HabitType, type VisibilityType, type CompletionRequirementType, type RecurrenceType } from "./types/habit.types";
+export type { 
+  Habit, 
+  HabitCompletion, 
+  User, 
+  MotivationalMessage 
+} from "./types/habit.types";
+export type { 
+  HabitType, 
+  VisibilityType, 
+  CompletionRequirementType, 
+  RecurrenceType 
+} from "./types/habit.types";
 
 interface HabitContextType {
   habits: Habit[];
