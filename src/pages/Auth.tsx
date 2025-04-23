@@ -37,11 +37,11 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-couple-primary/20 to-couple-secondary/20 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50/20 to-blue-100/20 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-3xl font-bold">Welcome Back</CardTitle>
-          <p className="text-muted-foreground">Sign in to track habits together</p>
+          <CardTitle className="text-3xl font-bold text-blue-600">Welcome Back, Habibi</CardTitle>
+          <p className="text-blue-500/80">Sign in to track habits together</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignIn} className="space-y-4">
@@ -52,7 +52,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full"
+                className="w-full border-blue-200 focus:ring-blue-300"
               />
             </div>
             <div className="space-y-2">
@@ -62,12 +62,12 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full"
+                className="w-full border-blue-200 focus:ring-blue-300"
               />
             </div>
             <Button
               type="submit"
-              className="w-full bg-couple-primary hover:bg-couple-primary/90"
+              className="w-full bg-blue-500 hover:bg-blue-600"
               disabled={loading}
             >
               {loading ? (
