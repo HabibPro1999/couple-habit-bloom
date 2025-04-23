@@ -3,9 +3,10 @@ import React, { useState } from "react";
 import { useHabitContext } from "@/contexts/HabitContext";
 import HabitCard from "@/components/HabitCard";
 import { Button } from "@/components/ui/button";
-import { Plus, User, Users, Calendar } from "lucide-react";
+import { Plus, User, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
+import MotivationalMessage from "@/components/MotivationalMessage";
 
 const Today: React.FC = () => {
   const { getHabitsForDate, getPersonalHabits, getSharedHabits } = useHabitContext();
@@ -40,6 +41,8 @@ const Today: React.FC = () => {
           })}
         </p>
       </header>
+      
+      <MotivationalMessage />
       
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid grid-cols-3 mb-6">
