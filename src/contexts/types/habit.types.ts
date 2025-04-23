@@ -1,3 +1,4 @@
+
 export type HabitType = "personal" | "shared";
 export type VisibilityType = "visible" | "secret";
 export type CompletionRequirementType = "one" | "both";
@@ -29,6 +30,7 @@ export interface User {
   id: string;
   name: string;
   isPartner: boolean;
+  partnerId?: string;
 }
 
 export interface MotivationalMessage {

@@ -1,3 +1,4 @@
+
 import { Habit, HabitCompletion, User, MotivationalMessage } from "@/contexts/types/habit.types";
 
 export const mapHabitFromDB = (data: any): Habit => ({
@@ -43,6 +44,7 @@ export const mapUserFromDB = (data: any): User => ({
   id: data.id,
   name: data.name,
   isPartner: data.is_partner,
+  partnerId: data.partner_id,
 });
 
 export const mapMotivationalMessageFromDB = (data: any): MotivationalMessage => ({

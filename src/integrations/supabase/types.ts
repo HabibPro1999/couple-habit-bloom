@@ -45,11 +45,18 @@ export type Database = {
             referencedRelation: "habits"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "habit_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       habits: {
         Row: {
-          completion_requirement: string | null
+          completion_requirement: string
           created_at: string
           description: string | null
           id: string
@@ -59,10 +66,10 @@ export type Database = {
           type: string
           updated_at: string
           user_id: string
-          visibility: string | null
+          visibility: string
         }
         Insert: {
-          completion_requirement?: string | null
+          completion_requirement?: string
           created_at?: string
           description?: string | null
           id?: string
@@ -72,10 +79,10 @@ export type Database = {
           type: string
           updated_at?: string
           user_id: string
-          visibility?: string | null
+          visibility?: string
         }
         Update: {
-          completion_requirement?: string | null
+          completion_requirement?: string
           created_at?: string
           description?: string | null
           id?: string
@@ -85,9 +92,17 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string
-          visibility?: string | null
+          visibility?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "habits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       motivational_messages: {
         Row: {
@@ -111,34 +126,50 @@ export type Database = {
           sender_id?: string
           text?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "motivational_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
-          avatar_url: string | null
           created_at: string
           id: string
-          is_partner: boolean | null
+          is_partner: boolean
           name: string
+          partner_id: string | null
           updated_at: string
         }
         Insert: {
-          avatar_url?: string | null
           created_at?: string
           id: string
-          is_partner?: boolean | null
+          is_partner?: boolean
           name: string
+          partner_id?: string | null
           updated_at?: string
         }
         Update: {
-          avatar_url?: string | null
           created_at?: string
           id?: string
-          is_partner?: boolean | null
+          is_partner?: boolean
           name?: string
+          partner_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

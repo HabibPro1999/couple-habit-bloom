@@ -18,24 +18,33 @@ export const useUsers = (currentUserId: string | undefined) => {
         return;
       }
       
-      const { data, error } = await supabase
+      // Fetch current user's profile
+      const { data: currentUserData, error: currentUserError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("is_partner", true);
+        .eq("id", currentUserId)
+        .single();
       
-      if (error) throw error;
-
-      if (data) {
-        const users = data.map(mapUserFromDB);
-        const currentUserProfile = users.find(user => user.id === currentUserId);
+      if (currentUserError) throw currentUserError;
+      
+      if (currentUserData) {
+        const currentUserProfile = mapUserFromDB(currentUserData);
+        setCurrentUser(currentUserProfile);
         
-        // Find partner (a user marked as partner who is not the current user)
-        const partnerProfile = users.find(user => 
-          user.id !== currentUserId && user.isPartner
-        );
-        
-        if (currentUserProfile) setCurrentUser(currentUserProfile);
-        if (partnerProfile) setPartner(partnerProfile);
+        // If current user has a partner_id, fetch the partner's profile
+        if (currentUserProfile.partnerId) {
+          const { data: partnerData, error: partnerError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", currentUserProfile.partnerId)
+            .single();
+            
+          if (partnerError) throw partnerError;
+          
+          if (partnerData) {
+            setPartner(mapUserFromDB(partnerData));
+          }
+        }
       }
     } catch (error: any) {
       toast.error("Error fetching users", {

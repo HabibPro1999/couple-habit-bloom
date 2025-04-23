@@ -72,17 +72,17 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     return completion ? completion.completed : false;
   };
 
-  // Updated to only return personal habits that belong to the current user
+  // Personal habits that belong to the current user
   const getPersonalHabits = () => habits.filter(
     habit => habit.type === "personal" && habit.user_id === user?.id
   );
   
-  // Updated to only return shared habits that belong to the current user
+  // Shared habits that belong to the current user
   const getSharedHabits = () => habits.filter(
     habit => habit.type === "shared" && habit.user_id === user?.id
   );
   
-  // Updated to respect new RLS policies - only show visible partner habits
+  // Visible partner habits
   const getVisiblePartnerHabits = () => {
     if (!partner) return [];
     return habits.filter(habit => 
@@ -94,7 +94,7 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
 
   const getHabitsForDate = (date: string) => {
     const dayOfWeek = new Date(date).getDay();
-    // Updated to only return habits for the current user
+    // Return habits for the current user based on the date
     return habits.filter(habit => {
       if (habit.user_id !== user?.id && (habit.type !== "personal" || habit.visibility !== "visible" || habit.user_id !== partner?.id)) {
         return false;
