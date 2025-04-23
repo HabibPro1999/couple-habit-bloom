@@ -9,7 +9,137 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      habit_completions: {
+        Row: {
+          completed: boolean
+          created_at: string
+          date: string
+          habit_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          date: string
+          habit_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          habit_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_completions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          completion_requirement: string | null
+          created_at: string
+          description: string | null
+          id: string
+          recurrence: string
+          recurrence_days: number[] | null
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+          visibility: string | null
+        }
+        Insert: {
+          completion_requirement?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          recurrence: string
+          recurrence_days?: number[] | null
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+          visibility?: string | null
+        }
+        Update: {
+          completion_requirement?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          recurrence?: string
+          recurrence_days?: number[] | null
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          visibility?: string | null
+        }
+        Relationships: []
+      }
+      motivational_messages: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          sender_id: string
+          text: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          sender_id: string
+          text: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          sender_id?: string
+          text?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          is_partner: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          is_partner?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          is_partner?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
