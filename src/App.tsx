@@ -9,7 +9,6 @@ import Layout from "./components/Layout";
 import Today from "./pages/Today";
 import AllHabits from "./pages/AllHabits";
 import PartnerHabits from "./pages/PartnerHabits";
-import CalendarView from "./pages/CalendarView";
 import HabitForm from "./pages/HabitForm";
 import HabitDetail from "./pages/HabitDetail";
 import NotFound from "./pages/NotFound";
@@ -28,7 +27,6 @@ const App = () => (
               <Route path="/" element={<Today />} />
               <Route path="/all-habits" element={<AllHabits />} />
               <Route path="/partner-habits" element={<PartnerHabits />} />
-              <Route path="/calendar" element={<CalendarView />} />
               <Route path="/add-habit" element={<HabitForm />} />
               <Route path="/edit-habit/:habitId" element={<HabitForm />} />
               <Route path="/habit/:habitId" element={<HabitDetail />} />

@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, List, User, Calendar } from "lucide-react";
+import { Home, List, User } from "lucide-react";
 
 const BottomNav: React.FC = () => {
   const location = useLocation();
@@ -43,16 +43,6 @@ const BottomNav: React.FC = () => {
           >
             <User className="h-6 w-6" />
             <span className="text-xs mt-1">Partner</span>
-          </button>
-          
-          <button
-            className={`flex flex-col items-center py-3 px-5 ${
-              isActive("/calendar") ? "text-couple-primary" : "text-gray-500"
-            }`}
-            onClick={() => navigate("/calendar")}
-          >
-            <Calendar className="h-6 w-6" />
-            <span className="text-xs mt-1">Calendar</span>
           </button>
         </div>
       </div>
