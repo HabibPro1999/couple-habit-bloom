@@ -4,9 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Habit } from "@/contexts/types/habit.types";
 import { mapHabitFromDB, mapHabitToDB } from "@/utils/mappers/habit.mapper";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useHabits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
+  const { user } = useAuth();
 
   const fetchHabits = async () => {
     try {
@@ -22,9 +24,17 @@ export const useHabits = () => {
 
   const addHabit = async (habitData: Omit<Habit, "id" | "createdAt" | "updatedAt">) => {
     try {
+      if (!user) throw new Error("User must be logged in to add a habit");
+      
+      // Map the habit data to match the DB schema and add user_id
+      const dbData = {
+        ...mapHabitToDB(habitData),
+        user_id: user.id
+      };
+      
       const { data, error } = await supabase
         .from("habits")
-        .insert([mapHabitToDB(habitData)])
+        .insert([dbData])
         .select()
         .single();
 
@@ -36,6 +46,7 @@ export const useHabits = () => {
       toast.error("Error adding habit", {
         description: error.message
       });
+      throw error;
     }
   };
 

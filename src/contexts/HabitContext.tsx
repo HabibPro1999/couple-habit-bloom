@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { Habit, HabitCompletion, User, MotivationalMessage } from "./types/habit.types";
@@ -7,13 +6,16 @@ import { useCompletions } from "@/hooks/useCompletions";
 import { useUsers } from "@/hooks/useUsers";
 import { useMotivationalMessages } from "@/hooks/useMotivationalMessages";
 
+export { Habit, HabitCompletion, User, MotivationalMessage } from "./types/habit.types";
+export { type HabitType, type VisibilityType, type CompletionRequirementType, type RecurrenceType } from "./types/habit.types";
+
 interface HabitContextType {
   habits: Habit[];
   completions: HabitCompletion[];
   currentUser: User | null;
   partner: User | null;
   motivationalMessage: MotivationalMessage | null;
-  addHabit: (habit: Omit<Habit, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  addHabit: (habit: Omit<Habit, "id" | "createdAt" | "updatedAt">) => Promise<Habit>;
   updateHabit: (habit: Habit) => Promise<void>;
   deleteHabit: (habitId: string) => Promise<void>;
   toggleHabitCompletion: (habitId: string, date: string) => Promise<void>;

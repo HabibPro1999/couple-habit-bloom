@@ -32,6 +32,13 @@ export const mapCompletionFromDB = (data: any): HabitCompletion => ({
   completed: data.completed,
 });
 
+export const mapCompletionToDB = (completion: Partial<HabitCompletion>) => ({
+  habit_id: completion.habitId,
+  user_id: completion.userId,
+  date: completion.date,
+  completed: completion.completed,
+});
+
 export const mapUserFromDB = (data: any): User => ({
   id: data.id,
   name: data.name,
@@ -44,4 +51,10 @@ export const mapMotivationalMessageFromDB = (data: any): MotivationalMessage => 
   senderId: data.sender_id,
   createdAt: data.created_at,
   expiresAt: data.expires_at,
+});
+
+export const mapMotivationalMessageToDB = (message: Partial<MotivationalMessage>) => ({
+  text: message.text,
+  sender_id: message.senderId,
+  expires_at: message.expiresAt,
 });
