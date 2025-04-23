@@ -8,11 +8,19 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export const useHabits = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   const fetchHabits = async () => {
     try {
-      if (!user) return;
+      setIsLoading(true);
+      setError(null);
+      
+      if (!user) {
+        console.log("No user found, skipping habit fetch");
+        return;
+      }
       
       console.log("Fetching habits for user:", user.id);
       
@@ -23,22 +31,37 @@ export const useHabits = () => {
         
       if (error) {
         console.error("Error fetching habits:", error);
+        setError(error.message);
         throw error;
       }
       
       console.log("Fetched habits:", data);
-      setHabits(data.map(mapHabitFromDB));
+      const mappedHabits = data.map(mapHabitFromDB);
+      setHabits(mappedHabits);
+      return mappedHabits;
     } catch (error: any) {
       console.error("Error in fetchHabits:", error);
+      setError(error.message);
       toast.error("Error fetching habits", {
         description: error.message
       });
+      return [];
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const addHabit = async (habitData: Omit<Habit, "id" | "createdAt" | "updatedAt">) => {
     try {
-      if (!user) throw new Error("User must be logged in to add a habit");
+      setIsLoading(true);
+      setError(null);
+      
+      if (!user) {
+        const errorMsg = "User must be logged in to add a habit";
+        console.error(errorMsg);
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
       
       console.log("Adding habit with data:", habitData);
       
@@ -57,29 +80,34 @@ export const useHabits = () => {
 
       if (error) {
         console.error("Error adding habit:", error);
+        setError(error.message);
         throw error;
       }
       
       console.log("Successfully added habit:", data);
       
       const newHabit = mapHabitFromDB(data);
-      setHabits([...habits, newHabit]);
+      setHabits(prevHabits => [...prevHabits, newHabit]);
       
-      // Fetch all habits again to ensure everything is in sync
-      await fetchHabits();
-      
+      toast.success("Habit added successfully");
       return newHabit;
     } catch (error: any) {
       console.error("Error in addHabit:", error);
+      setError(error.message);
       toast.error("Error adding habit", {
         description: error.message
       });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const updateHabit = async (updatedHabit: Habit) => {
     try {
+      setIsLoading(true);
+      setError(null);
+      
       console.log("Updating habit:", updatedHabit);
       
       const { error } = await supabase
@@ -89,6 +117,7 @@ export const useHabits = () => {
 
       if (error) {
         console.error("Error updating habit:", error);
+        setError(error.message);
         throw error;
       }
       
@@ -98,18 +127,23 @@ export const useHabits = () => {
         habit.id === updatedHabit.id ? updatedHabit : habit
       ));
       
-      // Fetch all habits again to ensure everything is in sync
-      await fetchHabits();
+      toast.success("Habit updated successfully");
     } catch (error: any) {
       console.error("Error in updateHabit:", error);
+      setError(error.message);
       toast.error("Error updating habit", {
         description: error.message
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const deleteHabit = async (habitId: string) => {
     try {
+      setIsLoading(true);
+      setError(null);
+      
       console.log("Deleting habit with ID:", habitId);
       
       const { error } = await supabase
@@ -119,22 +153,29 @@ export const useHabits = () => {
 
       if (error) {
         console.error("Error deleting habit:", error);
+        setError(error.message);
         throw error;
       }
       
       console.log("Successfully deleted habit");
       
       setHabits(habits.filter(habit => habit.id !== habitId));
+      toast.success("Habit deleted successfully");
     } catch (error: any) {
       console.error("Error in deleteHabit:", error);
+      setError(error.message);
       toast.error("Error deleting habit", {
         description: error.message
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return {
     habits,
+    isLoading,
+    error,
     fetchHabits,
     addHabit,
     updateHabit,

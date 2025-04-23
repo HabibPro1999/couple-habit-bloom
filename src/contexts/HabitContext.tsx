@@ -1,11 +1,11 @@
-
-import React, { createContext, useContext, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useCallback, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { Habit, HabitCompletion, User, MotivationalMessage } from "./types/habit.types";
 import { useHabits } from "@/hooks/useHabits";
 import { useCompletions } from "@/hooks/useCompletions";
 import { useUsers } from "@/hooks/useUsers";
 import { useMotivationalMessages } from "@/hooks/useMotivationalMessages";
+import { toast } from "@/components/ui/sonner";
 
 export type { 
   Habit, 
@@ -26,6 +26,8 @@ interface HabitContextType {
   currentUser: User | null;
   partner: User | null;
   motivationalMessage: MotivationalMessage | null;
+  isLoading: boolean;
+  error: string | null;
   addHabit: (habit: Omit<Habit, "id" | "createdAt" | "updatedAt">) => Promise<Habit>;
   updateHabit: (habit: Habit) => Promise<void>;
   deleteHabit: (habitId: string) => Promise<void>;
@@ -44,31 +46,59 @@ const HabitContext = createContext<HabitContextType | undefined>(undefined);
 
 export function HabitProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { habits, fetchHabits, addHabit, updateHabit, deleteHabit } = useHabits();
+  const { habits, isLoading: habitsLoading, error: habitsError, fetchHabits, addHabit, updateHabit, deleteHabit } = useHabits();
   const { completions, fetchCompletions, toggleCompletion } = useCompletions();
   const { currentUser, partner, fetchUsers } = useUsers(user?.id);
   const { motivationalMessage, fetchMotivationalMessage, sendMessage } = useMotivationalMessages();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (user) {
       try {
+        setIsLoading(true);
+        setError(null);
         console.log("Fetching all data for user:", user.id);
-        await Promise.all([
+        
+        const results = await Promise.allSettled([
           fetchHabits(),
           fetchCompletions(),
           fetchUsers(),
           fetchMotivationalMessage()
         ]);
-        console.log("All data fetched successfully");
-      } catch (error) {
+        
+        const failures = results.filter(result => result.status === 'rejected');
+        if (failures.length > 0) {
+          console.warn("Some data fetching operations failed:", failures);
+          const errorMessages = failures.map((failure: any) => failure.reason?.message || 'Unknown error').join(', ');
+          setError(errorMessages);
+          
+          if (failures.length > 1 || failures[0] !== results[3]) {
+            toast.error("Some data couldn't be loaded", {
+              description: "Please try refreshing the page"
+            });
+          }
+        } else {
+          console.log("All data fetched successfully");
+          setError(null);
+        }
+      } catch (error: any) {
         console.error("Error fetching data:", error);
+        setError(error.message);
+        toast.error("Error loading data", {
+          description: error.message
+        });
+      } finally {
+        setIsLoading(false);
       }
     }
   }, [user, fetchHabits, fetchCompletions, fetchUsers, fetchMotivationalMessage]);
 
   useEffect(() => {
     console.log("HabitContext: User changed, fetching data", user?.id);
-    fetchData();
+    if (user) {
+      fetchData();
+    }
   }, [user, fetchData]);
 
   const getHabitCompletion = (habitId: string, date: string): boolean => {
@@ -86,7 +116,6 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     return completion ? completion.completed : false;
   };
 
-  // Personal habits that belong to the current user
   const getPersonalHabits = () => {
     console.log("Getting personal habits, all habits:", habits.length);
     const personalHabits = habits.filter(
@@ -96,7 +125,6 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     return personalHabits;
   };
   
-  // Shared habits that belong to the current user
   const getSharedHabits = () => {
     console.log("Getting shared habits, all habits:", habits.length);
     const sharedHabits = habits.filter(
@@ -106,7 +134,6 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     return sharedHabits;
   };
   
-  // Visible partner habits
   const getVisiblePartnerHabits = () => {
     if (!partner) return [];
     console.log("Getting visible partner habits, partner id:", partner.id);
@@ -122,21 +149,14 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   const getHabitsForDate = (date: string) => {
     const dayOfWeek = new Date(date).getDay();
     console.log("Getting habits for date:", date, "Day of week:", dayOfWeek);
-    // Return habits for the current user based on the date
     const filteredHabits = habits.filter(habit => {
-      // Own personal habits
       const isOwnPersonalHabit = habit.user_id === user?.id && habit.type === "personal";
-      
-      // Own shared habits
       const isOwnSharedHabit = habit.user_id === user?.id && habit.type === "shared";
-      
-      // Partner's visible personal habits
       const isPartnerVisibleHabit = partner && 
                                  habit.user_id === partner.id && 
                                  habit.type === "personal" && 
                                  habit.visibility === "visible";
       
-      // Check if this habit should be shown based on recurrence
       let matchesRecurrence = false;
       if (habit.recurrence === "daily") {
         matchesRecurrence = true;
@@ -171,6 +191,8 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     currentUser,
     partner,
     motivationalMessage,
+    isLoading,
+    error,
     addHabit,
     updateHabit,
     deleteHabit,
