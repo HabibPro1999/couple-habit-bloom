@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useHabitContext, Habit, HabitType, RecurrenceType, VisibilityType, CompletionRequirementType } from "@/contexts/HabitContext";
@@ -12,11 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const HabitForm: React.FC = () => {
   const { habitId } = useParams<{ habitId: string }>();
   const navigate = useNavigate();
   const { habits, addHabit, updateHabit, deleteHabit } = useHabitContext();
+  const { user } = useAuth();
   
   // Default values for a new habit
   const defaultHabit: Omit<Habit, "id" | "createdAt" | "updatedAt"> = {
@@ -27,6 +28,7 @@ const HabitForm: React.FC = () => {
     recurrenceDays: [1, 2, 3, 4, 5], // Monday to Friday
     visibility: "visible",
     completionRequirement: "one",
+    user_id: user?.id || "", // Add the user_id property with a default value
   };
   
   const [formData, setFormData] = useState(defaultHabit);
@@ -44,6 +46,13 @@ const HabitForm: React.FC = () => {
       }
     }
   }, [habitId, habits, navigate]);
+
+  // Update user_id when user changes
+  useEffect(() => {
+    if (user && !isEditing) {
+      setFormData(prev => ({ ...prev, user_id: user.id }));
+    }
+  }, [user, isEditing]);
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
