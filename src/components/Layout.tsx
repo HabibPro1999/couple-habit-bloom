@@ -1,15 +1,13 @@
 
 import React from "react";
 import BottomNav from "./BottomNav";
+import NavBar from "./NavBar";
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {children}
+    <div className="min-h-screen pb-16">
+      <NavBar />
+      <main>{children}</main>
       <BottomNav />
     </div>
   );

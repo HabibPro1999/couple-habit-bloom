@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthContext";
+import { toast } from "@/components/ui/sonner";
 
 // Define habit types
 export type HabitType = "personal" | "shared";
@@ -44,245 +47,213 @@ export interface MotivationalMessage {
 interface HabitContextType {
   habits: Habit[];
   completions: HabitCompletion[];
-  currentUser: User;
+  currentUser: User | null;
   partner: User | null;
   motivationalMessage: MotivationalMessage | null;
-  // Habit operations
-  addHabit: (habit: Omit<Habit, "id" | "createdAt" | "updatedAt">) => void;
-  updateHabit: (habit: Habit) => void;
-  deleteHabit: (habitId: string) => void;
-  // Completion operations
-  toggleHabitCompletion: (habitId: string, date: string) => void;
+  addHabit: (habit: Omit<Habit, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  updateHabit: (habit: Habit) => Promise<void>;
+  deleteHabit: (habitId: string) => Promise<void>;
+  toggleHabitCompletion: (habitId: string, date: string) => Promise<void>;
   getHabitCompletion: (habitId: string, date: string) => boolean;
   getPartnerHabitCompletion: (habitId: string, date: string) => boolean;
-  // Filter operations
   getPersonalHabits: () => Habit[];
   getSharedHabits: () => Habit[];
   getVisiblePartnerHabits: () => Habit[];
   getHabitsForDate: (date: string) => Habit[];
-  // Motivational Message operations
-  sendMotivationalMessage: (text: string) => void;
+  sendMotivationalMessage: (text: string) => Promise<void>;
 }
 
-// Create the context with an undefined default value
 const HabitContext = createContext<HabitContextType | undefined>(undefined);
 
-// Mock data for initial development
-const mockHabits: Habit[] = [
-  {
-    id: "1",
-    title: "Morning Meditation",
-    description: "10 minutes mindfulness practice",
-    type: "personal",
-    recurrence: "daily",
-    visibility: "visible",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "Drink Water",
-    description: "At least 8 glasses",
-    type: "personal",
-    recurrence: "daily",
-    visibility: "visible",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    title: "Evening Walk",
-    description: "30 minutes together",
-    type: "shared",
-    recurrence: "daily",
-    completionRequirement: "both",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "4",
-    title: "Grocery Shopping",
-    description: "Buy food for the week",
-    type: "shared",
-    recurrence: "specific-days",
-    recurrenceDays: [0, 3], // Sunday and Wednesday
-    completionRequirement: "one",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "5",
-    title: "Journal Writing",
-    description: "Private thoughts",
-    type: "personal",
-    recurrence: "daily",
-    visibility: "secret",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
-
-const mockCompletions: HabitCompletion[] = [
-  {
-    id: "c1",
-    habitId: "1",
-    userId: "user1",
-    date: new Date().toISOString().split("T")[0],
-    completed: true,
-  },
-  {
-    id: "c2",
-    habitId: "3",
-    userId: "user1",
-    date: new Date().toISOString().split("T")[0],
-    completed: true,
-  },
-  {
-    id: "c3",
-    habitId: "3",
-    userId: "user2",
-    date: new Date().toISOString().split("T")[0],
-    completed: false,
-  },
-];
-
-const mockCurrentUser: User = {
-  id: "user1",
-  name: "Alex",
-  isPartner: false,
-};
-
-const mockPartner: User = {
-  id: "user2",
-  name: "Jordan",
-  isPartner: true,
-};
-
-// Hook to use the habit context
-export function useHabitContext() {
-  const context = useContext(HabitContext);
-  if (context === undefined) {
-    throw new Error("useHabitContext must be used within a HabitProvider");
-  }
-  return context;
-}
-
-// Provider component
 export function HabitProvider({ children }: { children: React.ReactNode }) {
-  const [habits, setHabits] = useState<Habit[]>(mockHabits);
-  const [completions, setCompletions] = useState<HabitCompletion[]>(mockCompletions);
-  const [currentUser] = useState<User>(mockCurrentUser);
-  const [partner] = useState<User | null>(mockPartner);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [completions, setCompletions] = useState<HabitCompletion[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [partner, setPartner] = useState<User | null>(null);
   const [motivationalMessage, setMotivationalMessage] = useState<MotivationalMessage | null>(null);
+  const { user } = useAuth();
 
-  // Load data from local storage on mount
   useEffect(() => {
-    const storedHabits = localStorage.getItem("habits");
-    const storedCompletions = localStorage.getItem("completions");
-    const storedMessage = localStorage.getItem("motivationalMessage");
-    
-    if (storedHabits) {
-      setHabits(JSON.parse(storedHabits));
+    if (user) {
+      fetchHabits();
+      fetchCompletions();
+      fetchProfiles();
+      fetchMotivationalMessage();
     }
-    
-    if (storedCompletions) {
-      setCompletions(JSON.parse(storedCompletions));
+  }, [user]);
+
+  const fetchHabits = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("habits")
+        .select("*");
+      
+      if (error) throw error;
+      setHabits(data || []);
+    } catch (error: any) {
+      toast.error("Error fetching habits", {
+        description: error.message
+      });
     }
-    
-    if (storedMessage) {
-      const parsedMessage = JSON.parse(storedMessage);
-      // Check if the message has expired
-      if (new Date(parsedMessage.expiresAt) > new Date()) {
-        setMotivationalMessage(parsedMessage);
-      } else {
-        localStorage.removeItem("motivationalMessage");
+  };
+
+  const fetchCompletions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("habit_completions")
+        .select("*");
+      
+      if (error) throw error;
+      setCompletions(data || []);
+    } catch (error: any) {
+      toast.error("Error fetching completions", {
+        description: error.message
+      });
+    }
+  };
+
+  const fetchProfiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*");
+      
+      if (error) throw error;
+
+      if (data) {
+        const currentUserProfile = data.find(profile => profile.id === user?.id);
+        const partnerProfile = data.find(profile => profile.id !== user?.id);
+        
+        setCurrentUser(currentUserProfile || null);
+        setPartner(partnerProfile || null);
       }
+    } catch (error: any) {
+      toast.error("Error fetching profiles", {
+        description: error.message
+      });
     }
-  }, []);
+  };
 
-  // Save data to local storage when it changes
-  useEffect(() => {
-    localStorage.setItem("habits", JSON.stringify(habits));
-  }, [habits]);
-
-  useEffect(() => {
-    localStorage.setItem("completions", JSON.stringify(completions));
-  }, [completions]);
-
-  useEffect(() => {
-    if (motivationalMessage) {
-      localStorage.setItem("motivationalMessage", JSON.stringify(motivationalMessage));
+  const fetchMotivationalMessage = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("motivational_messages")
+        .select("*")
+        .gte("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== "PGRST116") throw error;
+      setMotivationalMessage(data || null);
+    } catch (error: any) {
+      toast.error("Error fetching motivational message", {
+        description: error.message
+      });
     }
-  }, [motivationalMessage]);
-
-  // Function to add a new habit
-  const addHabit = (habitData: Omit<Habit, "id" | "createdAt" | "updatedAt">) => {
-    const newHabit: Habit = {
-      ...habitData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setHabits([...habits, newHabit]);
   };
 
-  // Function to update an existing habit
-  const updateHabit = (updatedHabit: Habit) => {
-    setHabits(
-      habits.map((habit) =>
-        habit.id === updatedHabit.id
-          ? { ...updatedHabit, updatedAt: new Date().toISOString() }
-          : habit
-      )
-    );
+  const addHabit = async (habitData: Omit<Habit, "id" | "createdAt" | "updatedAt">) => {
+    try {
+      const { data, error } = await supabase
+        .from("habits")
+        .insert([{ ...habitData, user_id: user?.id }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      setHabits([...habits, data]);
+    } catch (error: any) {
+      toast.error("Error adding habit", {
+        description: error.message
+      });
+    }
   };
 
-  // Function to delete a habit
-  const deleteHabit = (habitId: string) => {
-    setHabits(habits.filter((habit) => habit.id !== habitId));
-    setCompletions(completions.filter((completion) => completion.habitId !== habitId));
+  const updateHabit = async (updatedHabit: Habit) => {
+    try {
+      const { error } = await supabase
+        .from("habits")
+        .update(updatedHabit)
+        .eq("id", updatedHabit.id);
+
+      if (error) throw error;
+      setHabits(habits.map(habit => 
+        habit.id === updatedHabit.id ? updatedHabit : habit
+      ));
+    } catch (error: any) {
+      toast.error("Error updating habit", {
+        description: error.message
+      });
+    }
   };
 
-  // Function to toggle habit completion
-  const toggleHabitCompletion = (habitId: string, date: string) => {
-    const existingCompletion = completions.find(
-      (completion) =>
-        completion.habitId === habitId &&
-        completion.userId === currentUser.id &&
-        completion.date === date
-    );
+  const deleteHabit = async (habitId: string) => {
+    try {
+      const { error } = await supabase
+        .from("habits")
+        .delete()
+        .eq("id", habitId);
 
-    if (existingCompletion) {
-      setCompletions(
-        completions.map((completion) =>
+      if (error) throw error;
+      setHabits(habits.filter(habit => habit.id !== habitId));
+    } catch (error: any) {
+      toast.error("Error deleting habit", {
+        description: error.message
+      });
+    }
+  };
+
+  const toggleHabitCompletion = async (habitId: string, date: string) => {
+    try {
+      const existingCompletion = completions.find(
+        completion =>
+          completion.habitId === habitId &&
+          completion.userId === user?.id &&
+          completion.date === date
+      );
+
+      if (existingCompletion) {
+        const { error } = await supabase
+          .from("habit_completions")
+          .update({ completed: !existingCompletion.completed })
+          .eq("id", existingCompletion.id);
+
+        if (error) throw error;
+        setCompletions(completions.map(completion =>
           completion.id === existingCompletion.id
             ? { ...completion, completed: !completion.completed }
             : completion
-        )
-      );
-    } else {
-      setCompletions([
-        ...completions,
-        {
-          id: Date.now().toString(),
-          habitId,
-          userId: currentUser.id,
-          date,
-          completed: true,
-        },
-      ]);
+        ));
+      } else {
+        const { data, error } = await supabase
+          .from("habit_completions")
+          .insert([{
+            habit_id: habitId,
+            user_id: user?.id,
+            date,
+            completed: true
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        setCompletions([...completions, data]);
+      }
+    } catch (error: any) {
+      toast.error("Error toggling habit completion", {
+        description: error.message
+      });
     }
   };
 
-  // Function to get habit completion status
   const getHabitCompletion = (habitId: string, date: string): boolean => {
     const completion = completions.find(
-      (c) => c.habitId === habitId && c.userId === currentUser.id && c.date === date
+      (c) => c.habitId === habitId && c.userId === user?.id && c.date === date
     );
     return completion ? completion.completed : false;
   };
 
-  // Function to get partner's habit completion status
   const getPartnerHabitCompletion = (habitId: string, date: string): boolean => {
     if (!partner) return false;
     const completion = completions.find(
@@ -291,28 +262,23 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     return completion ? completion.completed : false;
   };
 
-  // Function to get personal habits
-  const getPersonalHabits = (): Habit[] => {
-    return habits.filter((habit) => habit.type === "personal");
+  const getPersonalHabits = () => {
+    return habits.filter(habit => habit.type === "personal");
   };
 
-  // Function to get shared habits
-  const getSharedHabits = (): Habit[] => {
-    return habits.filter((habit) => habit.type === "shared");
+  const getSharedHabits = () => {
+    return habits.filter(habit => habit.type === "shared");
   };
 
-  // Function to get visible partner habits
-  const getVisiblePartnerHabits = (): Habit[] => {
+  const getVisiblePartnerHabits = () => {
     return habits.filter(
-      (habit) => habit.type === "personal" && habit.visibility === "visible"
+      habit => habit.type === "personal" && habit.visibility === "visible"
     );
   };
 
-  // Function to get habits due for a specific date
-  const getHabitsForDate = (date: string): Habit[] => {
+  const getHabitsForDate = (date: string) => {
     const dayOfWeek = new Date(date).getDay();
-    
-    return habits.filter((habit) => {
+    return habits.filter(habit => {
       if (habit.recurrence === "daily") {
         return true;
       } else if (habit.recurrence === "specific-days" && habit.recurrenceDays) {
@@ -322,24 +288,31 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  // Function to send a motivational message
-  const sendMotivationalMessage = (text: string) => {
-    const now = new Date();
-    const expiresAt = new Date(now);
-    expiresAt.setHours(expiresAt.getHours() + 24); // Message expires after 24 hours
-    
-    const newMessage: MotivationalMessage = {
-      id: Date.now().toString(),
-      text,
-      senderId: currentUser.id,
-      createdAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
-    };
-    
-    setMotivationalMessage(newMessage);
+  const sendMotivationalMessage = async (text: string) => {
+    try {
+      const now = new Date();
+      const expiresAt = new Date(now);
+      expiresAt.setHours(expiresAt.getHours() + 24);
+
+      const { data, error } = await supabase
+        .from("motivational_messages")
+        .insert([{
+          text,
+          sender_id: user?.id,
+          expires_at: expiresAt.toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      setMotivationalMessage(data);
+    } catch (error: any) {
+      toast.error("Error sending motivational message", {
+        description: error.message
+      });
+    }
   };
 
-  // Value object that will be passed to consumers
   const value = {
     habits,
     completions,
@@ -360,4 +333,12 @@ export function HabitProvider({ children }: { children: React.ReactNode }) {
   };
 
   return <HabitContext.Provider value={value}>{children}</HabitContext.Provider>;
+}
+
+export function useHabitContext() {
+  const context = useContext(HabitContext);
+  if (context === undefined) {
+    throw new Error("useHabitContext must be used within a HabitProvider");
+  }
+  return context;
 }
